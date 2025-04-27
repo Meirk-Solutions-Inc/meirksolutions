@@ -1,0 +1,67 @@
+pipeline{
+  agent any
+  tools{
+    maven "maven3.9.1"
+  }
+  environment {
+        // Define environment variables for Docker
+        DOCKER_IMAGE_NAME = "phb-webapps"    // Name of your Docker image
+        IMAGE_TAG = "" // Placeholder for dynamically generated tag
+        }
+  stages{
+    stage("1.CodeClone"){
+      steps{
+        git credentialsId: 'Github-Cred', url: 'https://github.com/mkushimo/web-app.git'
+      }
+    }
+    stage("2.Build"){
+      steps{
+        sh "mvn clean package"
+      }
+    }
+    stage("3.CodeQuality"){
+      steps{
+        sh "mvn sonar:sonar"
+      }
+    }
+    stage("Set Image Tag") {
+            steps {
+                script {
+                    // Dynamically generate the image tag using the build number and Git commit hash
+                   def commitHash = sh(script: "git rev-parse --short HEAD || echo 'dummyhash'", returnStdout: true).trim()
+                    env.IMAGE_TAG = "1.0.${env.BUILD_NUMBER}-${commitHash}"
+                }
+                echo "Docker image will be tagged as: ${DOCKER_IMAGE_NAME}:${env.IMAGE_TAG}"
+            }
+        }
+    stage("4. Build Docker Image") {
+            steps {
+                echo "Building Docker image with the artifact..."
+                // Build the Docker image
+                sh """
+                docker build -t ${DOCKER_IMAGE_NAME}:${env.IMAGE_TAG} .
+                """
+            }
+        }
+    stage("Push to Docker Hub") {
+            steps {
+                echo "Pushing Docker image to Docker Hub..."
+                withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh """
+                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    docker tag ${DOCKER_IMAGE_NAME}:${env.IMAGE_TAG} $DOCKER_USER/${DOCKER_IMAGE_NAME}:${env.IMAGE_TAG}
+                    docker push $DOCKER_USER/${DOCKER_IMAGE_NAME}:${env.IMAGE_TAG}
+                    """
+                }
+            }
+    }
+}
+ post {
+        success {
+            echo "Pipeline completed successfully! Docker image pushed as: ${DOCKER_IMAGE_NAME}:${env.IMAGE_TAG}"
+        }
+        failure {
+            echo "Pipeline failed. Check logs for details."
+        }
+    }
+    }

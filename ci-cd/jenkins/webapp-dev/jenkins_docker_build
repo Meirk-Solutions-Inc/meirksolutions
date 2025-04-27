@@ -1,0 +1,57 @@
+pipeline {
+    agent any
+
+    tools {
+        maven "maven3.9.1"
+    }
+
+    environment {
+        DOCKER_IMAGE_NAME = "rbc-webapps" // Name of the Docker image
+        DOCKER_IMAGE_TAG = "1.0.0"        // Version of the Docker image
+    }
+
+    stages {
+        stage("Code Clone") {
+            steps {
+                echo "Cloning the Git repository..."
+                git credentialsId: 'Github-Cred', url: '<https://github.com/mkushimo/web-app.git>'
+            }
+        }
+
+        stage("Build") {
+            steps {
+                echo "Building the application with Maven..."
+                sh "mvn clean package"
+            }
+        }
+
+        stage("Build Docker Image") {
+            steps {
+                echo "Building Docker image..."
+                sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ."
+            }
+        }
+
+        stage("Push to Docker Hub") {
+            steps {
+                echo "Pushing Docker image to Docker Hub..."
+                withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} $DOCKER_USER/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+                    docker push $DOCKER_USER/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Pipeline completed successfully and image pushed to Docker Hub!"
+        }
+        failure {
+            echo "Pipeline failed. Check logs for details."
+        }
+    }
+}
