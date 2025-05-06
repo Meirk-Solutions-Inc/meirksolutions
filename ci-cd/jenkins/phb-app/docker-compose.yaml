@@ -1,0 +1,16 @@
+version: '3'
+services:
+  jenkins-kube:
+    image: jenkins/jenkins:lts
+    container_name: jenkins-kube
+    user: root
+    ports:
+      - "8088:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - C:/Users/muisi/.kube:/var/jenkins_home/.kube
+      - jenkins_home:/var/jenkins_home
+    environment:
+      - DOCKER_TLS_VERIFY=1
+      - DOCKER_HOST=tcp://192.168.49.2:2376
+      - DOCKER_CERT_PATH=C:\Users\muisi\.minikube\certs

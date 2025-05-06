@@ -1,0 +1,140 @@
+Install Node exporter on Redhat Linux Ec2
+==========================================
+
+yum install wget stress-ng.x86_64 -y
+cd /opt
+wget https://github.com/prometheus/node_exporter/releases/download/v1.0.1/node_exporter-1.0.1.linux-amd64.tar.gz
+tar xvf node_exporter-1.0.1.linux-amd64.tar.gz
+mv node_exporter-1.0.1.linux-amd64.tar.gz node-exporter/
+
+
+create node exporter users
+=========================
+sudo groupadd -f node_exporter
+sudo useradd -g node_exporter --no-create-home --shell /bin/false node_exporter
+sudo mkdir /etc/node_exporter
+sudo chown node_exporter:node_exporter /etc/node_exporter
+
+Install exporter
+====================
+sudo chown node_exporter:node_exporter /opt/node-exporter/node_exporter
+
+create exporter service
+==========================
+sudo vi /usr/lib/systemd/system/node_exporter.service
+
+[Unit]
+Description=Node Exporter
+Documentation=https://prometheus.io/docs/guides/node-exporter/
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=node_exporter
+Group=node_exporter
+Type=simple
+Restart=on-failure
+ExecStart=/opt/node-exporter/node_exporter --web.listen-address=:9200
+
+[Install]
+WantedBy=multi-user.target
+
+sudo systemctl daemon-reload
+sudo systemctl start node_exporter
+sudo systemctl status node_exporter
+sudo systemctl enable node_exporter
+
+Test Node exporter
+=====================
+curl -lv http://localhost:9200/metrics
+
+Stress test
+===========
+stress-ng --seq 4 -t 20
+stress-ng --vm 2 --timeout 60s
+
+Grafana dashboard ID
+=====================
+10242
+
+
+docker-compose.yml
+==========================
+execute this first
+
+docker network create monitoring_network
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - monitoring_network
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - monitoring_network
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+
+volumes:
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  monitoring_network:
+    external: true
+
+
+Prometheus.yml
+# my global config
+global:
+  scrape_interval: 15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: "prometheus"
+
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+      - targets: ["localhost:9090"]
+ 
+  - job_name: "aws_node"
+    metrics_path: '/metrics'
+    static_configs: 
+     - targets: ['54.242.8.160:9200']

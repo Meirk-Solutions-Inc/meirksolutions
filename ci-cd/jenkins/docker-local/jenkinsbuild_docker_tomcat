@@ -1,0 +1,55 @@
+pipeline{
+  agent any
+  tools{
+    maven "maven3.9.1"
+  }
+  environment {
+        // Define environment variables for Docker
+        DOCKER_IMAGE_NAME = "rbc-webapps"    // Name of your Docker image
+        DOCKER_IMAGE_TAG = "1.0.0"              // Tag for the Docker image
+        }
+  stages{
+    stage("1.CodeClone"){
+      steps{
+        git credentialsId: 'Github-Cred', url: 'https://github.com/mkushimo/web-app.git'
+      }
+    }
+    stage("2.Build"){
+      steps{
+        sh "mvn clean package"
+      }
+    }
+    stage("3.CodeQuality"){
+      steps{
+        sh "mvn sonar:sonar"
+      }
+    }
+    stage("4. Build Docker Image") {
+            steps {
+                echo "Building Docker image with the artifact..."
+                // Build the Docker image
+                sh '''
+                docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
+                '''
+            }
+        }
+    stage("Push to Docker Hub") {
+            steps {
+                echo "Pushing Docker image to Docker Hub..."
+                withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} $DOCKER_USER/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+                    docker push $DOCKER_USER/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+                    '''
+                }
+            }
+            stage("Deploy to web"){
+            steps{
+                echo "Deploy to Tomcat"
+                deploy adapters: [tomcat9(credentialsId: 'admin123', path: '', url: 'http://184.72.208.235:8080/')], contextPath: null, war: 'target/*.war'                echo "Deploy to Tomcat completed"
+            }
+        }
+    }
+}
+}

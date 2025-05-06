@@ -1,0 +1,14 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.1.0">
+    <servers>
+        <server>
+            <id>acada-snapshot</id>
+            <username>admin</username>
+            <password>nexus</password>
+        </server>
+        <server>
+            <id>acada-release</id>
+            <username>admin</username>
+            <password>nexus</password>
+        </server>
+    </servers>
+</settings>
