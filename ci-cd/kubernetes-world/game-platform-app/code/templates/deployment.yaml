@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "game-platform.fullname" . }}-{{ .Chart.Name }}
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: {{ include "game-platform.name" . }}-{{ .Chart.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "game-platform.name" . }}-{{ .Chart.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DB_HOST
+              value: {{ .Values.api.env.DB_HOST }}
+            - name: REDIS_HOST
+              value: {{ .Values.api.env.REDIS_HOST }}

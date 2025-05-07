@@ -1,0 +1,29 @@
+api:
+  image:
+    repository: your-registry/game-api
+    tag: latest
+  env:
+    DB_HOST: db-service
+    REDIS_HOST: redis-service
+
+worker:
+  image:
+    repository: your-registry/game-worker
+    tag: latest
+  env:
+    DB_HOST: db-service
+
+dashboard:
+  image:
+    repository: your-registry/game-dashboard
+    tag: latest
+
+redis:
+  image: redis:alpine
+
+postgres:
+  image: postgres:15
+  env:
+    POSTGRES_USER: admin
+    POSTGRES_PASSWORD: secret
+    POSTGRES_DB: game_db

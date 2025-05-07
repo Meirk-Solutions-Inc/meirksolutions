@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: phb-pod
+  labels:
+    name: phbapp
+spec:
+  containers:
+  name: phb-pod
+  image: nginx
+  ports:
+  - containerPort: 80
