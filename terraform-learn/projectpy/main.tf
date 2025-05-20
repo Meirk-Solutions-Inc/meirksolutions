@@ -10,7 +10,7 @@ variable "cidr" {
 
 resource "aws_key_pair" "test" {
   key_name   = "terraform-demo-meir"  # Replace with your desired key name
-  public_key = file("/c/Users/muisi/.ssh/id_rsa")  # Replace with the path to your public key file
+  public_key = file("C:/Users/muisi/.ssh/id_rsa.pub")  # Replace with the path to your public key file
   
 }
 resource "aws_vpc" "meirk-vpc" {
@@ -32,7 +32,7 @@ resource "aws_route_table" "meirk-RT" {
   vpc_id = aws_vpc.meirk-vpc.id
 
   route {
-    cidr_block = "10.0.1.0/24"
+    cidr_block = "0.0.0.0/24"
     gateway_id = aws_internet_gateway.meirk-igw.id
   }
 }
@@ -83,7 +83,7 @@ resource "aws_instance" "meirk-test-app" {
     type        = "ssh"
     host        = self.public_ip
     user        = "ubuntu"
-    private_key = file("/c/Users/muisi/.ssh/id_rsa")  # Replace with the path to your private key file
+    private_key = file("C:/Users/muisi/.ssh/id_rsa")  # Replace with the path to your private key file
     }
     provisioner "file" {
         source      = "app.py"
