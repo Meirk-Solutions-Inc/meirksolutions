@@ -1,10 +1,10 @@
-/*terraform {
-  backend "s3" {
-    bucket = "terratest-bucket"
+terraform {
+    backend "s3" {
+    bucket = "meirk-terraform-test-bucket"
     region = "us-east-1"
     key = "meirk/terraform.tfstate"
     encrypt = true
     dynamodb_table = "terraform-lock"
-    profile = "meirk"    
+        
   }
-}*/
+}
