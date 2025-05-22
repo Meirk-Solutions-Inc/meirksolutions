@@ -10,7 +10,7 @@ variable "cidr" {
 
 resource "aws_key_pair" "test" {
   key_name   = "terraform-demo-meir"  # Replace with your desired key name
-  public_key = file("C:/Users/muisi/.ssh/id_rsa.pub")  # Replace with the path to your public key file
+  public_key = file("C:/Users/muisi/.ssh/meirk-key.pub")  # Replace with the path to your public key file
   
 }
 resource "aws_vpc" "meirk-vpc" {
@@ -32,7 +32,7 @@ resource "aws_route_table" "meirk-RT" {
   vpc_id = aws_vpc.meirk-vpc.id
 
   route {
-    cidr_block = "0.0.0.0/24"
+    cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.meirk-igw.id
   }
 }
@@ -70,34 +70,44 @@ resource "aws_security_group" "meirk-webSg" {
     }
 }
 resource "aws_instance" "meirk-test-app" {
-    ami           = "ami-084568db4383264d4"
+    ami           = "ami-084568db4383264d4"  # Ubuntu AMI
     instance_type = "t2.micro"
     subnet_id     = aws_subnet.meirk-subnet.id
     key_name      = aws_key_pair.test.key_name
     vpc_security_group_ids = [aws_security_group.meirk-webSg.id]
     
-  tags = {
-    Name = "TestApp"
-  }
-  connection {
-    type        = "ssh"
-    host        = self.public_ip
-    user        = "ubuntu"
-    private_key = file("C:/Users/muisi/.ssh/id_rsa")  # Replace with the path to your private key file
+    tags = {
+        Name = "TestApp"
     }
+
     provisioner "file" {
         source      = "app.py"
         destination = "/home/ubuntu/app.py"
-    }  
+    
+        connection {
+            type        = "ssh"
+            host        = self.public_ip
+            user        = "ubuntu"
+            private_key = file("C:/Users/muisi/.ssh/meirk-key")  # Replace with the path to your private key file
+            timeout     = "5m"
+    }
+    }
 
     provisioner "remote-exec" {
         inline = [
             "echo 'Hello Meirk Solutions Inc.'",
-            "sudo apt-get update",
+            "sudo apt update",
             "sudo apt-get install -y python3-pip",
             "cd /home/ubuntu",
             "sudo pip3 install flask",
             "sudo python3 app.py &" # Run the app in the background
         ]
+        connection {
+            type        = "ssh"
+            host        = self.public_ip
+            user        = "ubuntu"
+            private_key = file("C:/Users/muisi/.ssh/meirk-key")  # Replace with the path to your private key file
+            timeout     = "5m"
+        }
     }
 }
