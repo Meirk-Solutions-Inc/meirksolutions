@@ -100,7 +100,7 @@ resource "aws_instance" "meirk-test-app" {
             "sudo apt-get install -y python3-pip",
             "cd /home/ubuntu",
             "sudo pip3 install flask",
-            "sudo python3 app.py &" # Run the app in the background
+            "sudo python3 app.py" # Run the app in the background
         ]
         connection {
             type        = "ssh"
