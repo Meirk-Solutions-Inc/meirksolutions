@@ -10,9 +10,9 @@ provider "vault" {
     path = "auth/approle/login"
 
     parameters = {
-      role_id = "c8c42d10-c9f9-3dec-eef5-782c5bdb9549"   # Replace with your role_id
+      role_id = "role-id"   # Replace with your role_id
       # If you have a secret_id, uncomment the next line and replace with your secret_id
-      secret_id = "fefd87ec-0607-9bed-75d5-c9cc94357b34" # Replace with your secret_id
+      secret_id = "secret-id" # Replace with your secret_id
       # If you are using a token, you can use the following line instead
     }
   }
