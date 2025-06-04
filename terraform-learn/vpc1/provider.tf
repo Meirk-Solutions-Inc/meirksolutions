@@ -6,11 +6,10 @@ terraform {
       region = "us-east-1"
     }
   }
-}
-
 backend "s3" {
   bucket         = "meirk-terraform-test-bucket"
   region         = "us-east-1"
   key            = "meirk/vpc1/terraform.tfstate"
   encrypt        = true
+}
 }
