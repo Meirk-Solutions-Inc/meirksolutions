@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cfcu-deployment
+  labels:
+    app: cfcu
+spec:
+  replicas : 2
+  selector:
+    matchLabels:
+      app: cfcu
+  template: 
+    metadata:
+      labels:
+        app: cfcu
+    spec:
+      containers:
+        - name: cfcu
+          image: nginx
+          ports:
+          - containerPort: 80
+          volumeMounts:
+            - name: cfcu-config-volume
+              mountPath: /etc/cfcu
+            - name: cfcu-data-volume
+              mountPath: /var/lib/cfcu
+            - name: cfcu-logs-volume
+              mountPath: /var/log/cfcu
+            - name: cfcu-secrets-volume
+              mountPath: /etc/cfcu/secrets
+              readOnly: true
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+      volumes:
+      - name: cfcu-config-volume
+        configMap:
+          name: cfcu-configmap
+      - name: cfcu-data-volume
+        persistentVolumeClaim:
+          claimName: cfcu-data-pvc
+      - name: cfcu-logs-volume
+        emptyDir: {}
+      - name: cfcu-secrets-volume
+        secret:
+          secretName: cfcu-secrets

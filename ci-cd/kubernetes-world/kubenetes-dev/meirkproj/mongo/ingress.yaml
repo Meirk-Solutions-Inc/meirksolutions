@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: 
+  name: proj-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx  #the annotation was generally used to reference the name of the Ingress controller that should implement the Ingress resource.
+  tls:
+    - hosts:
+      - mongo-express.example.com
+      secretName: mongo-express-tls
+  rules:
+    - host: mongo-express.example.com
+      http:
+        paths:
+        - path: /testpath
+          pathType: Prefix
+          backend:
+            service:
+              name: mongo-express-service
+              port:
+                number: 8081
