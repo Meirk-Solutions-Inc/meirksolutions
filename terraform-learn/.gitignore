@@ -7,3 +7,24 @@ crash.log
 *.tfvars.json
 .terraform.lock.hcl     # optional to ignore
 
+# Terraform state
+*.tfstate
+*.tfstate.backup
+*.tfstate.lock.info
+
+# Terraform crash logs
+crash.log
+
+# Sensitive variable files
+*.tfvars
+*.tfvars.json
+
+# Backend config vars
+*backend*.tfvars
+
+# Local .terraform directories
+.terraform/*
+
+# Terraform CLI config
+.terraformrc
+terraform.rc
