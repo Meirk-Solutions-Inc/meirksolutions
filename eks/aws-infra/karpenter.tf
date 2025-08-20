@@ -69,10 +69,12 @@ resource "aws_iam_instance_profile" "karpenter_node" {
 
 # Namespace + SA for Karpenter
 resource "kubernetes_namespace" "karpenter" {
+  count = var.enable_karpenter ? 1 : 0
   metadata { name = local.karpenter_namespace }
 }
 
 resource "kubernetes_service_account" "karpenter" {
+  count = var.enable_karpenter ? 1 : 0
   metadata {
     name      = local.karpenter_sa
     namespace = local.karpenter_namespace
@@ -86,6 +88,7 @@ resource "kubernetes_service_account" "karpenter" {
 
 # Install Karpenter via Helm (OCI repo)
 resource "helm_release" "karpenter" {
+  count      = var.enable_karpenter ? 1 : 0
   name       = "karpenter"
   namespace  = local.karpenter_namespace
   repository = "oci://public.ecr.aws/karpenter"
@@ -94,7 +97,6 @@ resource "helm_release" "karpenter" {
 
   depends_on = [
     module.eks,
-    kubernetes_service_account.karpenter,
     aws_iam_role_policy_attachment.karpenter_attach
   ]
 
@@ -118,24 +120,26 @@ set {
 
 # Karpenter CRDs (EC2NodeClass + NodePool)
 resource "kubernetes_manifest" "ec2nodeclass" {
+  count = var.enable_karpenter ? 1 : 0
   manifest = {
     apiVersion = "karpenter.k8s.aws/v1beta1"
     kind       = "EC2NodeClass"
     metadata = { name = "default" }
     spec = {
-      amiFamily = "AL2"
-      role      = aws_iam_role.karpenter_node.name
+      amiFamily      = "AL2"
+      role           = aws_iam_role.karpenter_node.name
+      instanceProfile = aws_iam_instance_profile.karpenter_node.name
       subnetSelectorTerms = [{ tags = { "karpenter.sh/discovery" = var.cluster_name } }]
       securityGroupSelectorTerms = [{
         tags = { "kubernetes.io/cluster/${var.cluster_name}" = "owned" }
       }]
-      instanceProfile = aws_iam_instance_profile.karpenter_node.name
     }
   }
   depends_on = [helm_release.karpenter]
 }
 
 resource "kubernetes_manifest" "nodepool" {
+  count = var.enable_karpenter ? 1 : 0
   manifest = {
     apiVersion = "karpenter.sh/v1beta1"
     kind       = "NodePool"
@@ -143,11 +147,12 @@ resource "kubernetes_manifest" "nodepool" {
     spec = {
       template = {
         spec = {
-          nodeClassRef = { name = kubernetes_manifest.ec2nodeclass.object.metadata.name }
+          nodeClassRef = { name = kubernetes_manifest.ec2nodeclass[0].object.metadata.name }
           requirements = [
-            { key = "karpenter.k8s.aws/instance-family", operator = "In", values = ["t3", "m6i", "c6i"] },
+            { key = "karpenter.k8s.aws/instance-family", operator = "In", values = ["t3","m6i","c6i"] },
             { key = "kubernetes.io/arch", operator = "In", values = ["amd64"] },
-            { key = "topology.kubernetes.io/zone", operator = "In", values = ["${var.region}a", "${var.region}b", "${var.region}c"] }
+            { key = "topology.kubernetes.io/zone", operator = "In",
+              values = ["${var.region}a","${var.region}b","${var.region}c"] }  # <— fixed
           ]
         }
       }

@@ -17,7 +17,7 @@ terraform {
 }
 
 provider "aws" {
-    region = "var.region"
+    region = var.region
 }
 
 # These depend on the cluster existing. Keep them as-is; run Terraform in two passes.
